@@ -6,8 +6,8 @@
 #include <stack>
 #include <string>
 // Motor control pins
-#define x 150
-#define y 150
+#define X 150
+#define Y 150
 #define TRIG_PIN 12
 #define ECHO_PIN 11
 #define ENA 5
@@ -16,6 +16,8 @@
 #define ENB 10
 #define IN3 8
 #define IN4 9
+// Movement tracking constants
+#define MAX_MOVES 100
 // new
 #define FORWARD 1
 #define BACKWARD -1
@@ -55,9 +57,8 @@ using namespace std;
 const int obstacleThreshold = 20;
 bool process_Done = false;
 bool swap_left_right = true;
-bool isInScope
-// Movement tracking constants
-#define MAX_MOVES 100
+bool isInScope;
+
 
 // Movement tracking arrays
 stack<int> movementDistances;     // 0 distance for turn left or right
@@ -66,7 +67,7 @@ stack<int> movementDirections; // 1 for forward, -1 for backward ,2 for left tur
 int moveCount = 0;
 
 MPU6050 mpu;
-HardwareSerial Serial1(1); // Use UART1
+// HardwareSerial Serial1(1); // Use UART1    on the esp we must comment that  'The Serial1 object is already provided by the ESP32 core library'
 
 void setup()
 {
@@ -122,7 +123,7 @@ void loop()
         {
             // check the sensor that is responsible of catch the object
             isInScope = check_Sensor();
-            if (IN_Scope)
+            if (isInScope)
             {
                 // the code of arm ...
                 Hold_Obj();
@@ -144,7 +145,7 @@ void loop()
         turnLeftMPU();
         returnToStart();
         // the end
-        while ()
+        while (1)
             ;
     }
 
@@ -263,8 +264,8 @@ void turnLeftMPU()
     digitalWrite(IN2, HIGH);
     digitalWrite(IN3, HIGH);
     digitalWrite(IN4, LOW);
-    analogWrite(ENA, x); 
-    analogWrite(ENB, y);
+    analogWrite(ENA, X); 
+    analogWrite(ENB, Y);
 
     while (true)
     {
@@ -288,8 +289,8 @@ void turnRightMPU()
     digitalWrite(IN2, LOW);
     digitalWrite(IN3, LOW);
     digitalWrite(IN4, HIGH);
-    analogWrite(ENA, x);
-    analogWrite(ENB, y);
+    analogWrite(ENA, X);
+    analogWrite(ENB, Y);
 
     while (true)
     {
@@ -328,8 +329,8 @@ void moveForward()
     digitalWrite(IN2, LOW);
     digitalWrite(IN3, HIGH);
     digitalWrite(IN4, LOW);
-    analogWrite(ENA, x);
-    analogWrite(ENB, y);
+    analogWrite(ENA, X);
+    analogWrite(ENB, Y);
 }
 
 void stopMotors()
@@ -395,7 +396,7 @@ bool checkCamera()
     // Check for incoming data from ESP32-CAM
     if (Serial1.available())
     {
-        string receivedData = Serial1.readStringUntil('\n');
+        String receivedData = Serial1.readStringUntil('\n');
         Serial.print("Received from ESP32-CAM: ");
         Serial.println(receivedData);
         delay(1000); // Delay for demonstration
