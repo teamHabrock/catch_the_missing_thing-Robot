@@ -3,8 +3,7 @@
 #include <Ultrasonic.h>
 #include <HardwareSerial.h>
 #include <Adafruit_PWMServoDriver.h>
-#include <stack>
-#include <string>
+
 // Motor control pins
 #define X 150
 #define Y 150
@@ -59,10 +58,9 @@ bool process_Done = false;
 bool swap_left_right = true;
 bool isInScope;
 
-
 // Movement tracking arrays
-stack<int> movementDistances;     // 0 distance for turn left or right
-stack<int> movementDirections; // 1 for forward, -1 for backward ,2 for left turn, -2 for right turn
+int movementDistances[MAX_MOVES];  // 0 distance for turn left or right
+int movementDirections[MAX_MOVES]; // 1 for forward, -1 for backward ,2 for left turn, -2 for right turn
 
 int moveCount = 0;
 
@@ -127,7 +125,7 @@ void loop()
             {
                 // the code of arm ...
                 Hold_Obj();
-                    process_Done = true;
+                process_Done = true;
                 break;
             }
             else
@@ -264,7 +262,7 @@ void turnLeftMPU()
     digitalWrite(IN2, HIGH);
     digitalWrite(IN3, HIGH);
     digitalWrite(IN4, LOW);
-    analogWrite(ENA, X); 
+    analogWrite(ENA, X);
     analogWrite(ENB, Y);
 
     while (true)
@@ -357,24 +355,25 @@ void storeTraking(int direction, int distance)
     if (moveCount < MAX_MOVES)
     {
 
-        movementDistances.push(distance);
-        movementDirections.push(direction);
+        movementDistances[moveCount] = distance;
+        movementDirections[moveCount] = direction;
         moveCount++;
     }
 }
 
 void returnToStart()
 {
-    Serial.println("returnToStart...");
+    // Serial.println("returnToStart...");
     // loop until the stack become empty
     // the stack is LIFO
-    while (!movementDirections.empty())
+    int i;
+    for (i = moveCount; i >= 0; i--)
     {
 
-        switch (movementDirections.top())
+        switch (movementDirections[i])
         {
         case FORWARD:
-            moveDistance(movementDistances.top());
+            moveDistance(movementDistances[i]);
             break;
         case BACKWARD:
             break;
@@ -384,10 +383,9 @@ void returnToStart()
         case RIGHT:
             turnRightMPU();
             break;
+        default:
+            break;
         }
-        // remove the current element from the top of stack
-        movementDirections.pop();
-        movementDistances.pop();
     }
 }
 
