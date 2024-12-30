@@ -71,7 +71,7 @@ void setup()
 {
     Serial.begin(115200);
     // setup the communication with camera
-    Serial1.begin(9600, SERIAL_8N1, 16, 17); // UART1 on GPIO16 (RX) and GPIO17 (TX)
+    // Serial1.begin(9600, SERIAL_8N1, 16, 17); // UART1 on GPIO16 (RX) and GPIO17 (TX)  delete this on arduino
     Serial.println("ESP32-CAM Peripheral Initialized");
     // Set motor pins as outputs
     pinMode(ENA, OUTPUT);
@@ -391,21 +391,21 @@ void returnToStart()
 
 bool checkCamera()
 {
-    // Check for incoming data from ESP32-CAM
-    if (Serial1.available())
-    {
-        String receivedData = Serial1.readStringUntil('\n');
-        Serial.print("Received from ESP32-CAM: ");
-        Serial.println(receivedData);
-        delay(1000); // Delay for demonstration
-                     // the camera will send "OK" when detect the desired object...
-        if (receivedData == "OK")
-        {
-            return true;
-        }
-        return false;
-    }
-    return false;
+    // // Check for incoming data from ESP32-CAM
+    // if (Serial1.available())
+    // {
+    //     String receivedData = Serial1.readStringUntil('\n');
+    //     Serial.print("Received from ESP32-CAM: ");
+    //     Serial.println(receivedData);
+    //     delay(1000); // Delay for demonstration
+    //                  // the camera will send "OK" when detect the desired object...
+    //     if (receivedData == "OK")
+    //     {
+    //         return true;
+    //     }
+    //     return false;
+    // }
+    // return false;
 }
 
 bool check_Sensor()
