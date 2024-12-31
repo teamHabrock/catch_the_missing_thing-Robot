@@ -12,13 +12,13 @@
 #define IN2 5
 #define ENB 9
 #define IN3 7
-#define IN4 8  
+#define IN4 8
 
 // defines all used Ultrasonic
 #define TRIG_PIN_Arm 11
 #define ECHO_PIN_Arm 10
 #define TRIG_PIN_Obstecale 12
-#define ECHO_PIN_Obstecale 13 
+#define ECHO_PIN_Obstecale 13
 
 // defintion of the arms code
 #define SERVOMIN 150
@@ -27,7 +27,7 @@
 #define USMAX 2400
 #define SERVO_FREQ 50
 
-//these defines is using to return to the starting point
+// these defines is using to return to the starting point
 #define FORWARD 1
 #define BACKWARD -1
 #define LEFT 2
@@ -37,8 +37,7 @@
 // Movement tracking constants
 #define MAX_MOVES 300
 
-
-using namespace std; 
+using namespace std;
 // Arms
 Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
 const int objectDistance = 8;
@@ -51,32 +50,32 @@ int RLU = 0;
 int RLD = 10;
 
 // we have two ultraSonic one for obstecals and another to hold the desired object
-Ultrasonic ultrasonic_Arm(TRIG_PIN_Arm, ECHO_PIN_Arm);// this responsible of run the arm code and and catch the desired object
+Ultrasonic ultrasonic_Arm(TRIG_PIN_Arm, ECHO_PIN_Arm);                   // this responsible of run the arm code and and catch the desired object
 Ultrasonic ultrasonic_Obstecale(TRIG_PIN_Obstecale, ECHO_PIN_Obstecale); // to avoid Obstecale
 
- // mpu
- MPU6050 mpu;
+// mpu
+MPU6050 mpu;
 
 // declaration of functions
 void LIFT(int x);
 int angletopulse(int ang);
 void moveDistance(int distance);
 bool checkCamera();
-void avoidObstacle();
+bool avoidObstacle();
 void stopMotors();
 int lookRight();
 int lookLeft();
 void turnRightMPU();
 void turnLeftMPU();
 float getYaw();
-void storeTraking(int direction, int distance);
+void storeTraking(int direction, int distance = 0);
 void moveForward();
 bool check_Sensor();
 void Hold_Obj();
 void returnToStart();
 
-// constant used in the code 
-const int obstacleThreshold = 20;// Obstacle detection threshold in cm
+// constant used in the code
+const int obstacleThreshold = 20; // Obstacle detection threshold in cm
 bool process_Done = false;
 bool swap_left_right = true;
 bool isInScope;
@@ -86,9 +85,7 @@ int movementDistances[MAX_MOVES];  // 0 distance for turn left or right
 int movementDirections[MAX_MOVES]; // 1 for forward, -1 for backward ,2 for left turn, -2 for right turn
 int moveCount = 0;
 
-
 // HardwareSerial Serial1(1); // Use UART1    on the esp we must comment that  'The Serial1 object is already provided by the ESP32 core library'
-
 
 void setup()
 {
@@ -173,13 +170,13 @@ void loop()
     if (swap_left_right)
     {
         turnLeftMPU();
-        storeTraking(LEFT, 0);
+        storeTraking(LEFT);
         swap_left_right = !swap_left_right;
     }
     else
     {
         turnRightMPU();
-        storeTraking(RIGHT, 0);
+        storeTraking(RIGHT);
         swap_left_right = !swap_left_right;
     }
 }
@@ -206,7 +203,11 @@ void moveDistance(int distance)
             }
             else
             {
-                avoidObstacle();
+                bool found_Object_During_Return = avoidObstacle();
+                if (found_Object_During_Return)
+                {
+                    break;
+                }
             }
         }
         else
@@ -223,23 +224,33 @@ void moveDistance(int distance)
 }
 
 // Function to avoid an obstacle
-void avoidObstacle()
+bool avoidObstacle()
 {
     stopMotors();
     delay(1000);
 
-    int rightDistance = lookRight();
-    int leftDistance = lookLeft();
+     int rightDistance = lookRight();
+    if (rightDistance == -1) // -1 means the robot find the desired object while he turn right
+    {
+        storeTraking(RIGHT);
+        return true;
+    }
+     int leftDistance = lookLeft();
+    if (leftDistance == -1) // -1 means the robot find the desired object while he turn left
+    {
+        storeTraking(LEFT);
+        return true;
+    }
 
     if (rightDistance > leftDistance)
     {
         turnRightMPU();
-        storeTraking(RIGHT, TIME_BYPASS_OBSTACLE);
+        storeTraking(RIGHT);
     }
     else
     {
         turnLeftMPU();
-        storeTraking(LEFT, TIME_BYPASS_OBSTACLE);
+        storeTraking(LEFT);
     }
     // Bypass obstacle
     moveForward();
@@ -250,13 +261,14 @@ void avoidObstacle()
     if (rightDistance > leftDistance)
     {
         turnLeftMPU();
-        storeTraking(LEFT, 0);
+        storeTraking(LEFT);
     }
     else
     {
         turnRightMPU();
-        storeTraking(RIGHT, 0);
+        storeTraking(RIGHT);
     }
+    return false;
 }
 
 // Function to calculate yaw using MPU6050
@@ -325,18 +337,28 @@ void turnRightMPU()
 }
 
 // Look right
-int lookRight()
+ int lookRight()
 {
     turnRightMPU();
+    bool Object_Detected = checkCamera();
+    if (Object_Detected)
+    {
+        return -1; // -1 means the object is detected
+    }
     int distance = ultrasonic_Obstecale.read();
     turnLeftMPU();
     return distance;
 }
 
 // Look left
-int lookLeft()
+ int lookLeft()
 {
     turnLeftMPU();
+    bool Object_Detected = checkCamera();
+    if (Object_Detected)
+    {
+        return -1;
+    }
     int distance = ultrasonic_Obstecale.read();
     turnRightMPU();
     return distance;
@@ -367,7 +389,7 @@ void steady()
     delay(2000);
 }
 
-void storeTraking(int direction, int distance)
+void storeTraking(int direction, int distance = 0)
 {
     if (!process_Done)
     {
@@ -382,7 +404,6 @@ void storeTraking(int direction, int distance)
         moveCount++;
     }
 }
-
 
 void returnToStart()
 {
@@ -399,10 +420,10 @@ void returnToStart()
         case BACKWARD:
             break;
         case LEFT:
-            turnLeftMPU();
+             turnRightMPU();
             break;
         case RIGHT:
-            turnRightMPU();
+           turnLeftMPU();
             break;
         default:
             break;
