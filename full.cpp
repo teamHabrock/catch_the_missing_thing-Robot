@@ -7,37 +7,39 @@
 // Motor control pins
 #define X 150
 #define Y 150
-#define TRIG_PIN 12
-#define ECHO_PIN 11
-#define ENA 5
-#define IN1 7
-#define IN2 6
-#define ENB 10
-#define IN3 8
-#define IN4 9
-// Movement tracking constants
-#define MAX_MOVES 100
-// new
-#define FORWARD 1
-#define BACKWARD -1
-#define LEFT 2
-#define RIGHT -2
-#define TIME_BYPASS_OBSTACLE 100
-// defintion of the arms
+#define ENA 3
+#define IN1 6
+#define IN2 5
+#define ENB 9
+#define IN3 7
+#define IN4 8  
+
+// defines all used Ultrasonic
+#define TRIG_PIN_Arm 11
+#define ECHO_PIN_Arm 10
+#define TRIG_PIN_Obstecale 12
+#define ECHO_PIN_Obstecale 13 
+
+// defintion of the arms code
 #define SERVOMIN 150
 #define SERVOMAX 600
 #define USMIN 600
 #define USMAX 2400
 #define SERVO_FREQ 50
-#define TRIG_PIN_Arm 12 // edit...
-#define ECHO_PIN_Arm 11
-#define TRIG_PIN_Obstecale 13
-#define ECHO_PIN_Obstecale 14
-// declaration of functions
 
-void LIFT(int x);
-int angletopulse(int ang);
-//
+//these defines is using to return to the starting point
+#define FORWARD 1
+#define BACKWARD -1
+#define LEFT 2
+#define RIGHT -2
+#define TIME_BYPASS_OBSTACLE 100
+
+// Movement tracking constants
+#define MAX_MOVES 300
+
+
+using namespace std; 
+// Arms
 Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
 const int objectDistance = 8;
 uint8_t servonum = 0;
@@ -47,13 +49,34 @@ int LU = 3;
 int LD = 4;
 int RLU = 0;
 int RLD = 10;
-// we have two ultraSonic one for obstecals and another for
-Ultrasonic ultrasonic_Arm(TRIG_PIN_Arm, ECHO_PIN_Arm);                   // this responsible of run the arm code and and catch the desired object
+
+// we have two ultraSonic one for obstecals and another to hold the desired object
+Ultrasonic ultrasonic_Arm(TRIG_PIN_Arm, ECHO_PIN_Arm);// this responsible of run the arm code and and catch the desired object
 Ultrasonic ultrasonic_Obstecale(TRIG_PIN_Obstecale, ECHO_PIN_Obstecale); // to avoid Obstecale
 
-using namespace std;
-// Obstacle detection threshold in cm
-const int obstacleThreshold = 20;
+ // mpu
+ MPU6050 mpu;
+
+// declaration of functions
+void LIFT(int x);
+int angletopulse(int ang);
+void moveDistance(int distance);
+bool checkCamera();
+void avoidObstacle();
+void stopMotors();
+int lookRight();
+int lookLeft();
+void turnRightMPU();
+void turnLeftMPU();
+float getYaw();
+void storeTraking(int direction, int distance);
+void moveForward();
+bool check_Sensor();
+void Hold_Obj();
+void returnToStart();
+
+// constant used in the code 
+const int obstacleThreshold = 20;// Obstacle detection threshold in cm
 bool process_Done = false;
 bool swap_left_right = true;
 bool isInScope;
@@ -61,11 +84,11 @@ bool isInScope;
 // Movement tracking arrays
 int movementDistances[MAX_MOVES];  // 0 distance for turn left or right
 int movementDirections[MAX_MOVES]; // 1 for forward, -1 for backward ,2 for left turn, -2 for right turn
-
 int moveCount = 0;
 
-MPU6050 mpu;
+
 // HardwareSerial Serial1(1); // Use UART1    on the esp we must comment that  'The Serial1 object is already provided by the ESP32 core library'
+
 
 void setup()
 {
@@ -114,7 +137,6 @@ void loop()
 
     if (Object_Detected)
     {
-        // the robot find the desired object
         stopMotors();
         // in the following while loop , the robot will close to the desired object until the ultrasonic_Arm detect the object to run the code of arm and hold the object
         while (true)
@@ -361,11 +383,10 @@ void storeTraking(int direction, int distance)
     }
 }
 
+
 void returnToStart()
 {
-    // Serial.println("returnToStart...");
-    // loop until the stack become empty
-    // the stack is LIFO
+    Serial.println("returnToStart...");
     int i;
     for (i = moveCount; i >= 0; i--)
     {
