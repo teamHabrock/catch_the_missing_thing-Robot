@@ -229,13 +229,13 @@ bool avoidObstacle()
     stopMotors();
     delay(1000);
 
-     int rightDistance = lookRight();
+    int rightDistance = lookRight();
     if (rightDistance == -1) // -1 means the robot find the desired object while he turn right
     {
         storeTraking(RIGHT);
         return true;
     }
-     int leftDistance = lookLeft();
+    int leftDistance = lookLeft();
     if (leftDistance == -1) // -1 means the robot find the desired object while he turn left
     {
         storeTraking(LEFT);
@@ -337,7 +337,7 @@ void turnRightMPU()
 }
 
 // Look right
- int lookRight()
+int lookRight()
 {
     turnRightMPU();
     bool Object_Detected = checkCamera();
@@ -351,7 +351,7 @@ void turnRightMPU()
 }
 
 // Look left
- int lookLeft()
+int lookLeft()
 {
     turnLeftMPU();
     bool Object_Detected = checkCamera();
@@ -420,10 +420,10 @@ void returnToStart()
         case BACKWARD:
             break;
         case LEFT:
-             turnRightMPU();
+            turnRightMPU();
             break;
         case RIGHT:
-           turnLeftMPU();
+            turnLeftMPU();
             break;
         default:
             break;
